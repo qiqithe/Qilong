@@ -5,8 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ## 📌 仓库信息
-- 代码地址：[https://github.com/YSJohnson/QingLongScripts-YSJ](https://github.com/YSJohnson/QingLongScripts-YSJ)
-- 适用环境：青龙面板（QingLong Panel）
+- 适用环境：青龙面板（QingLong）
 - 维护状态：个人自用，持续更新
 
 ## 📋 脚本说明
