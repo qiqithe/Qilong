@@ -20,9 +20,4 @@
 1. 本脚本仅供学习研究使用，严禁用于任何商业、刷量、违规获利等行为；
 2. 使用本脚本所产生的一切风险、账号封禁、法律责任及后果，均由使用者自行承担；
 3. 作者仅提供代码参考，不承担任何相关责任。使用即代表您已阅读并同意本声明；
-4. 脚本更新链接（记得转存获取实时更新）：https://pan.quark.cn/s/c6416fe69380。
-
-## 🎯 使用建议
-1. 克隆仓库到青龙面板：
-   ```bash
-   git clone https://github.com/YSJohnson/QingLongScripts-YSJ.git /ql/scripts/YSJ-Scripts
+4. 脚本更新链接（记得转存获取实时更新）：https://pan.quark.cn/s/c6416fe69380
