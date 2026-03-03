@@ -415,7 +415,8 @@ def worker_entry(index: int, data: str):
 
 def main():
     print("\n=================================================")
-    print("代码发布地址：https://github.com/YSJohnson/QingLongScripts-YSJ")
+    print("原作者：https://github.com/YSJohnson/QingLongScripts-YSJ")
+    print("本人二次修改脚本更新链接 记得转存实时更新：https://pan.quark.cn/s/c6416fe69380")
     print("=================================================\n")
 
     if CFG is None:
@@ -445,4 +446,5 @@ def main():
     logger.info("✅ 所有账号任务执行完毕（签到+刷任务）")
 
 if __name__ == '__main__':
+
     main()
