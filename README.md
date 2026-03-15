@@ -1,4 +1,4 @@
-# 🐉 青龙脚本仓库 | QingLongScripts-YSJ
+# 🐉 青龙脚本仓库 | QingLongScripts-Qilong
 
 > 个人维护的青龙面板自动化脚本集合，自用为主，持续更新优化
 
