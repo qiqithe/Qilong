@@ -1,0 +1,372 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+本脚本仅供学习研究使用，严禁用于任何商业、刷量、违规获利等行为。
+使用本脚本所产生的一切风险、账号封禁、法律责任及后果，均由使用者自行承担。
+作者仅提供代码参考，不承担任何相关责任。使用即代表您已阅读并同意本声明。
+脚本更新链接 记得转存实时更新：https://pan.quark.cn/s/c6416fe69380
+‘’‘
+
+’‘’
+链接：#小程序://OO加速/WwfqVqF3Ov7nCFf
+环境变量：OOTOKEN（单个token）
+解决次数消耗不同步+时长累计+奖励问题
+OO加速器 自动看视频签到领取免费的加速时长https://www.oojsq.com/index.html
+我的邀请码：JAJSQ78W 领3天免费时长
+"""
+# 屏蔽SSL警告
+import warnings
+from urllib3.exceptions import InsecureRequestWarning
+warnings.simplefilter('ignore', InsecureRequestWarning)
+
+import requests
+import json
+import os
+import time
+import random
+from datetime import datetime
+
+# ========== 日志美化模块 ==========
+class SimpleLogger:
+    """简约日志输出类"""
+    # ANSI颜色代码（仅基础颜色）
+    RESET = '\033[0m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    CYAN = '\033[36m'
+    GRAY = '\033[90m'
+    
+    @staticmethod
+    def get_timestamp():
+        """获取格式化的时间戳"""
+        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    @staticmethod
+    def _print(level, color, msg):
+        """统一打印方法"""
+        print(f"{SimpleLogger.GRAY}[{SimpleLogger.get_timestamp()}]{SimpleLogger.RESET} {color}[{level}]{SimpleLogger.RESET} {msg}")
+    
+    @staticmethod
+    def info(msg):
+        """信息日志"""
+        SimpleLogger._print("INFO", SimpleLogger.CYAN, msg)
+    
+    @staticmethod
+    def success(msg):
+        """成功日志"""
+        SimpleLogger._print("SUCCESS", SimpleLogger.GREEN, msg)
+    
+    @staticmethod
+    def warning(msg):
+        """警告日志"""
+        SimpleLogger._print("WARNING", SimpleLogger.YELLOW, msg)
+    
+    @staticmethod
+    def error(msg):
+        """错误日志"""
+        SimpleLogger._print("ERROR", SimpleLogger.RED, msg)
+    
+    @staticmethod
+    def step(msg):
+        """步骤日志"""
+        SimpleLogger._print("STEP", SimpleLogger.BLUE, msg)
+    
+    @staticmethod
+    def title(msg):
+        """标题日志"""
+        print(f"\n{SimpleLogger.CYAN}{'='*50}")
+        print(f"{msg}")
+        print(f"{'='*50}{SimpleLogger.RESET}\n")
+    
+    @staticmethod
+    def separator():
+        """分隔线"""
+        print(f"{SimpleLogger.GRAY}{'-'*50}{SimpleLogger.RESET}")
+    
+    @staticmethod
+    def box(title, content_dict):
+        """信息框"""
+        print(f"\n{SimpleLogger.CYAN}{'-'*50}")
+        print(f"{title}")
+        print(f"{'-'*50}")
+        for key, value in content_dict.items():
+            print(f"{key}: {value}")
+        print(f"{'-'*50}\n")
+    
+    @staticmethod
+    def progress(current, total, prefix="进度"):
+        """进度显示"""
+        percent = (current / total) * 100
+        bar_length = 20
+        filled = int(bar_length * current / total)
+        bar = '=' * filled + '-' * (bar_length - filled)
+        SimpleLogger.info(f"{prefix}: [{bar}] {current}/{total} ({percent:.1f}%)")
+
+# 创建全局日志实例
+log = SimpleLogger()
+
+# ========== 核心配置（精准匹配你抓的接口） ==========
+OOTOKEN = os.getenv("OOTOKEN", "")
+# 签到接口
+CHECKIN_URL = "https://webapi.oojsq.com/api/member/checkin"
+# 广告核心接口（你抓的完整URL）
+AD_START_URL = "https://webapi.oojsq.com/api/member/advertis_start"  # 广告开始（扣次数）
+AD_END_URL = "https://webapi.oojsq.com/api/member/advertis_end"      # 广告结束（记时长）
+AD_DURATION_URL = "https://webapi.oojsq.com/api/member/duration_log" # 时长兜底上报
+AD_WATCH_TIMES = 4  # 连续看4次广告（覆盖3个广告避免遗漏）
+AD_PLAY_DURATION = 35  # 广告播放时长（35秒，适配你30秒的广告）
+
+# ========== 手机端请求头（核心：解决终端不同步） ==========
+def get_mobile_headers():
+    # 手机微信小程序UA（替换电脑端UA，让服务器判定为手机端）
+    ua_list = [
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x18003229) NetType/4G Language/zh_CN miniProgram",
+        "Mozilla/5.0 (Android 14; Mobile; MI 14; Build/UKQ1.230804.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36 MicroMessenger/8.0.50.2401(0x28003237) NetType/WIFI Language/zh_CN miniProgram",
+        "Mozilla/5.0 (Android 13; Mobile; vivo X100; Build/TKQ1.221114.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/117.0.0.0 Mobile Safari/537.36 MicroMessenger/8.0.49.2380(0x28003136) NetType/5G Language/zh_CN miniProgram"
+    ]
+    headers = {
+        "Host": "webapi.oojsq.com",
+        "Connection": "keep-alive",
+        "User-Agent": random.choice(ua_list),  # 随机手机UA
+        "xweb_xhr": "1",
+        "Content-Type": "application/json;charset=UTF-8",
+        "Accept": "*/*",
+        "Sec-Fetch-Site": "cross-site",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Dest": "empty",
+        "Referer": "https://servicewechat.com/wx84a39ddf13f8a951/0/page-frame.html",  # 手机端Referer
+        "X-Requested-With": "com.tencent.mm",  # 手机微信标识
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "zh-CN,zh;q=0.9"
+    }
+    return headers
+
+# 随机延时（模拟人工操作节奏，规避风控）
+def random_sleep(min_sec=1, max_sec=3):
+    sleep_time = random.uniform(min_sec, max_sec)
+    time.sleep(sleep_time)
+
+# ========== 签到功能 ==========
+def auto_checkin():
+    if not OOTOKEN:
+        log.error("未配置OOTOKEN环境变量！")
+        return
+
+    log.title("开始执行签到任务")
+    headers = get_mobile_headers()
+    data = {"access_token": OOTOKEN}
+
+    try:
+        log.step("请求前随机延时...")
+        random_sleep()  # 请求前随机延时
+        log.step("正在发送签到请求...")
+        response = requests.post(
+            url=CHECKIN_URL,
+            headers=headers,
+            json=data,
+            timeout=15,
+            verify=False
+        )
+        response.encoding = "utf-8"
+        result = response.json()
+
+
+        if response.status_code == 200 and result.get("msg") == "成功":
+            log.success("签到成功！")
+        elif "已签到" in result.get("msg", ""):
+            log.success("今日已签到！")
+        else:
+            log.warning(f"签到结果：{result.get('msg', '未知')}")
+
+    except requests.exceptions.Timeout:
+        log.error("签到请求超时！")
+    except requests.exceptions.ConnectionError:
+        log.error("网络连接失败！")
+    except json.JSONDecodeError:
+        log.error(f"响应格式异常：{response.text[:100]}")
+    except Exception as e:
+        log.error(f"签到异常：{str(e)[:100]}")
+
+# ========== 单轮完整广告流程（start→播放→end→时长上报） ==========
+def watch_single_ad(ad_index):
+    if not OOTOKEN:
+        return False, "未配置OOTOKEN"
+
+    headers = get_mobile_headers()
+    data = {"access_token": OOTOKEN}  # 接口仅需access_token（和你抓的一致）
+    step_success = True
+
+    # 步骤1：调用advertis_start（广告开始，扣减次数）
+    try:
+        log.step(f"触发第 {ad_index} 个广告开始（扣减次数）...")
+        log.info(f"模拟人工操作延时（2-4秒）...")
+        random_sleep(2, 4)  # 模拟点击“看广告”的人工延时
+        start_res = requests.post(
+            url=AD_START_URL,
+            headers=headers,
+            json=data,
+            timeout=15,
+            verify=False
+        )
+        start_result = start_res.json()
+        if start_res.status_code != 200 or start_result.get("msg") != "成功":
+            error_msg = start_result.get('msg', '未知')
+            log.error(f"第 {ad_index} 个广告开始失败：{error_msg}")
+            # 检查是否达到次数上限，如果是则终止整个脚本
+            if "您今天看广告次数已达上限" in error_msg:
+                log.error("检测到广告次数已达上限，终止脚本执行！")
+                return False, "次数已达上限"
+            step_success = False
+        else:
+            log.success(f"第 {ad_index} 个广告开始成功！")
+    except Exception as e:
+        log.error(f"第 {ad_index} 个广告开始异常：{str(e)[:100]}")
+        step_success = False
+
+    if not step_success:
+        return False, "广告开始失败"
+
+    # 步骤2：模拟广告播放（35秒，适配你30秒的广告）
+    log.step(f"正在播放第 {ad_index} 个广告...（{AD_PLAY_DURATION}秒）")
+    # 显示倒计时
+    for remaining in range(AD_PLAY_DURATION, 0, -5):
+        if remaining >= 5:
+            log.info(f"广告播放中，剩余 {remaining} 秒...")
+            time.sleep(5)
+        else:
+            time.sleep(remaining)
+    log.success(f"第 {ad_index} 个广告播放完成！")
+
+    # 步骤3：调用advertis_end（广告结束，累计时长）
+    try:
+        log.step(f"触发第 {ad_index} 个广告结束（累计时长）...")
+        log.info("请求前随机延时（1-3秒）...")
+        random_sleep(1, 3)
+        log.step("正在发送广告结束请求...")
+        end_res = requests.post(
+            url=AD_END_URL,
+            headers=headers,
+            json=data,
+            timeout=15,
+            verify=False
+        )
+        end_result = end_res.json()
+        if end_res.status_code != 200 or end_result.get("msg") != "成功":
+            error_msg = end_result.get('msg', '未知')
+            log.error(f"第 {ad_index} 个广告结束失败：{error_msg}")
+            # 检查是否达到次数上限，如果是则终止整个脚本
+            if "您今天看广告次数已达上限" in error_msg:
+                log.error("检测到广告次数已达上限，终止脚本执行！")
+                return False, "次数已达上限"
+            step_success = False
+        else:
+            log.success(f"第 {ad_index} 个广告结束成功！")
+    except Exception as e:
+        log.error(f"第 {ad_index} 个广告结束异常：{str(e)[:100]}")
+        step_success = False
+
+    if not step_success:
+        # 如果是次数上限错误，已经返回了，所以这里只处理普通错误
+        return False, "广告结束失败"
+
+    # 步骤4：兜底调用duration_log（时长上报，确保统计）
+    try:
+        log.step(f"上报第 {ad_index} 个广告时长（兜底）...")
+        log.info("请求前随机延时（1-2秒）...")
+        random_sleep(1, 2)
+        log.step("正在发送时长上报请求...")
+        duration_res = requests.post(
+            url=AD_DURATION_URL,
+            headers=headers,
+            json=data,
+            timeout=15,
+            verify=False
+        )
+        duration_result = duration_res.json()
+        # 打印完整响应，方便核对时长累计
+        log.box(f"第 {ad_index} 个广告时长上报响应", {
+            "账号Token": f"{OOTOKEN[:10]}...",
+            "状态码": duration_res.status_code,
+            "响应消息": duration_result.get('msg', '未知'),
+            "响应码": duration_result.get('code', '无')
+        })
+        # 显示观看成功消息
+        log.success("观看成功")
+        if duration_res.status_code == 200 and duration_result.get("msg") == "成功":
+            log.success(f"第 {ad_index} 个广告流程全部完成！")
+            return True, "成功"
+        else:
+            log.warning(f"第 {ad_index} 个广告时长上报异常，但核心流程已完成")
+            return True, "时长上报异常但核心流程完成"
+    except Exception as e:
+        log.error(f"第 {ad_index} 个广告时长上报异常：{str(e)[:100]}")
+        return True, "时长上报异常但核心流程完成"
+
+# ========== 批量执行4次广告 ==========
+def auto_watch_ad_batch():
+    if not OOTOKEN:
+        log.error("未配置OOTOKEN环境变量！")
+        return
+
+    log.title(f"开始执行连续广告任务（共 {AD_WATCH_TIMES} 次）")
+    success_count = 0
+    fail_count = 0
+
+    for ad_index in range(1, AD_WATCH_TIMES + 1):
+        # 显示进度
+        log.progress(ad_index, AD_WATCH_TIMES, f"广告任务进度")
+        
+        # 广告间随机间隔（模拟人工切换广告）
+        if ad_index > 1:
+            log.info("广告间隔休息...（3-5秒）")
+            random_sleep(3, 5)
+        
+        # 执行单轮广告
+        log.separator()
+        is_success, msg = watch_single_ad(ad_index)
+        if is_success:
+            success_count += 1
+        elif msg == "次数已达上限":
+            log.warning("广告次数已达上限，停止后续广告任务")
+            break  # 终止循环
+        else:
+            fail_count += 1
+
+    # 汇总结果
+    log.title("广告任务执行汇总")
+    # 任务统计显示
+    log.separator()
+    print(f"广告任务执行统计")
+    log.separator()
+    print(f"总任务数：{AD_WATCH_TIMES}")
+    print(f"成功次数：{success_count}")
+    print(f"失败次数：{fail_count}")
+    print(f"成功率：{(success_count/AD_WATCH_TIMES*100):.1f}%")
+    # 进度条显示
+    if AD_WATCH_TIMES > 0:
+        progress_percent = (success_count / AD_WATCH_TIMES) * 100
+        bar_length = 20
+        filled = int(bar_length * success_count / AD_WATCH_TIMES)
+        bar = '=' * filled + '-' * (bar_length - filled)
+        print(f"任务进度：[{bar}] {success_count}/{AD_WATCH_TIMES} ({progress_percent:.1f}%)")
+    log.separator()
+
+# ========== 主程序 ==========
+if __name__ == "__main__":
+    log.title("OO加速器自动化脚本")
+    log.info(f"脚本启动时间：{time.strftime('%Y-%m-%d %H:%M:%S')}")
+    log.separator()
+    log.info("请转存支持一下 https://pan.xunlei.com/s/VOodnb5uV0DuzprIV_m66JfVA1 谢谢！")
+    log.separator()
+    
+    # 先签到，再执行广告任务
+    auto_checkin()
+    auto_watch_ad_batch()
+    
+    log.title("任务执行完成")
+    log.success("签到+广告任务全部执行完毕！")
+    log.info(f"脚本结束时间：{time.strftime('%Y-%m-%d %H:%M:%S')}")
+    log.separator()
+    log.info("这个也转存支持一下 https://pan.xunlei.com/s/VOodnb5uV0DuzprIV_m66JfVA1 谢谢！")
