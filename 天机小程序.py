@@ -374,7 +374,7 @@ if __name__ == "__main__":
     log.separator()
     
     # 转存提示
-    log.info("请转存支持一下 https://pan.xunlei.com/s/VOodnb5uV0DuzprIV_m66JfVA1 谢谢！")
+    log.info("请转存支持一下：https://pan.xunlei.com/s/VOp2qvup8fwnracOHwwdHs3tA1?pwd=vgzz# 谢谢！")
     log.separator()
     
     # 查询用户信息
@@ -410,4 +410,4 @@ if __name__ == "__main__":
     
     # 再次提示转存
     log.separator()
-    log.info("请转存支持一下 https://pan.xunlei.com/s/VOodnb5uV0DuzprIV_m66JfVA1 谢谢！")
+    log.info("请转存支持一下：https://pan.xunlei.com/s/VOp2qvup8fwnracOHwwdHs3tA1?pwd=vgzz# 谢谢！")
