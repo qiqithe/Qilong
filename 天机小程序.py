@@ -11,7 +11,7 @@
 多号：TOKEN_LIST 内置！ 或 TIANJITOKEN 环境变量（#分隔）
 优先使用环境变量，无环境变量时使用内置列表
 并发：CONCURRENCY 控制并发数
-#小程序://天机观/HgjiWxOeJrfXC4i
+#小程序://天机观/w7xqgbTsXln13OB
 #采用内置token 方便不用青龙即可运行的用户运行
 """
 
